@@ -534,3 +534,93 @@ button, select, input {
   .form-grid { grid-template-columns: 1fr; }
   .topbar { flex-direction: column; align-items: flex-start; }
 }
+
+
+html, body, #root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.main-shell,
+.panel,
+.hero-grid,
+.content-grid,
+.dashboard-grid,
+.table-wrap {
+  min-width: 0;
+}
+
+.data-table {
+  table-layout: fixed;
+}
+
+.data-table th, .data-table td {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hero-grid {
+  grid-template-columns: minmax(0, 2fr) repeat(4, minmax(0, 1fr));
+}
+
+.dashboard-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.content-grid {
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+}
+
+.steps-list {
+  display: grid;
+  gap: 12px;
+  color: #dce8ff;
+  line-height: 1.55;
+}
+
+.builder-block {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(115, 147, 215, 0.12);
+}
+
+.builder-title {
+  margin-bottom: 12px;
+  font-weight: 700;
+  color: #dfe9fb;
+}
+
+.chip-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.select-chip {
+  border: 1px solid var(--line);
+  color: #cfe0ff;
+  background: rgba(255,255,255,0.04);
+  border-radius: 999px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.select-chip.active {
+  background: rgba(73, 167, 255, 0.18);
+  border-color: rgba(73, 167, 255, 0.4);
+}
+
+.filter-row {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) auto;
+  gap: 10px;
+}
+
+@media (max-width: 1280px) {
+  .hero-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dashboard-grid, .content-grid { grid-template-columns: 1fr; }
+  .filter-row { grid-template-columns: 1fr; }
+}

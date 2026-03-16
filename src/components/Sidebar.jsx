@@ -1,12 +1,12 @@
 import React from 'react'
 
 const items = [
-  'Dashboard',
-  'Data',
-  'Model',
-  'Explore',
-  'Saved Views',
-  'Settings'
+  'Дашборд',
+  'Данные',
+  'Модель',
+  'Конструктор графиков',
+  'Сохраненные виды',
+  'Настройки'
 ]
 
 export default function Sidebar({ section, setSection }) {
@@ -16,7 +16,7 @@ export default function Sidebar({ section, setSection }) {
         <div className="brand-logo">N</div>
         <div>
           <div className="brand-title">NewLevel BI</div>
-          <div className="brand-sub">No server analytics</div>
+          <div className="brand-sub">Локальная BI-аналитика без сервера</div>
         </div>
       </div>
 

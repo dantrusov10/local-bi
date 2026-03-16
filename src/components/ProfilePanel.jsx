@@ -4,8 +4,8 @@ export default function ProfilePanel({ table }) {
   return (
     <div className="panel glass">
       <div className="panel-header">
-        <h3>Column profiling</h3>
-        <span className="small-muted">{table?.profiles?.length || 0} fields</span>
+        <h3>Профилирование колонок</h3>
+        <span className="small-muted">{table?.profiles?.length || 0} полей</span>
       </div>
 
       {!table ? (

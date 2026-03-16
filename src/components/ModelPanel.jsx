@@ -13,9 +13,7 @@ export default function ModelPanel({ tables, relations, setRelations, suggestion
   function confirmSuggestion(suggestion) {
     setRelations((prev) => {
       const exists = prev.some((r) => r.id === suggestion.id)
-      if (exists) {
-        return prev.map((r) => r.id === suggestion.id ? { ...r, confirmed: true } : r)
-      }
+      if (exists) return prev.map((r) => r.id === suggestion.id ? { ...r, confirmed: true } : r)
       return [...prev, { ...suggestion, confirmed: true }]
     })
   }
@@ -45,8 +43,8 @@ export default function ModelPanel({ tables, relations, setRelations, suggestion
       <div className="content-grid">
         <div className="panel glass">
           <div className="panel-header">
-            <h3>Suggested joins</h3>
-            <span className="small-muted">{suggestions.length} found</span>
+            <h3>Предлагаемые связи</h3>
+            <span className="small-muted">{suggestions.length} найдено</span>
           </div>
 
           {!suggestions.length ? (
@@ -57,9 +55,9 @@ export default function ModelPanel({ tables, relations, setRelations, suggestion
                 <div key={item.id} className="relation-card">
                   <div>
                     <div className="relation-title">{item.leftTableName}.{item.leftColumn} ↔ {item.rightTableName}.{item.rightColumn}</div>
-                    <div className="small-muted">confidence {item.confidence}% · {item.relationType}</div>
+                    <div className="small-muted">уверенность {item.confidence}% · {item.relationType}</div>
                   </div>
-                  <button className="secondary-btn" onClick={() => confirmSuggestion(item)}>Use join</button>
+                  <button className="secondary-btn" onClick={() => confirmSuggestion(item)}>Использовать</button>
                 </div>
               ))}
             </div>
@@ -68,28 +66,28 @@ export default function ModelPanel({ tables, relations, setRelations, suggestion
 
         <div className="panel glass">
           <div className="panel-header">
-            <h3>Manual join</h3>
+            <h3>Ручное объединение</h3>
             <span className="small-muted">left / inner / full</span>
           </div>
 
           <div className="form-grid">
             <select className="select" value={leftTableId} onChange={(e) => setLeftTableId(e.target.value)}>
-              <option value="">Left table</option>
+              <option value="">Левая таблица</option>
               {tables.map((table) => <option key={table.id} value={table.id}>{table.tableName}</option>)}
             </select>
 
             <select className="select" value={leftColumn} onChange={(e) => setLeftColumn(e.target.value)}>
-              <option value="">Left field</option>
+              <option value="">Левое поле</option>
               {leftTable?.columns.map((column) => <option key={column} value={column}>{column}</option>)}
             </select>
 
             <select className="select" value={rightTableId} onChange={(e) => setRightTableId(e.target.value)}>
-              <option value="">Right table</option>
+              <option value="">Правая таблица</option>
               {tables.map((table) => <option key={table.id} value={table.id}>{table.tableName}</option>)}
             </select>
 
             <select className="select" value={rightColumn} onChange={(e) => setRightColumn(e.target.value)}>
-              <option value="">Right field</option>
+              <option value="">Правое поле</option>
               {rightTable?.columns.map((column) => <option key={column} value={column}>{column}</option>)}
             </select>
 
@@ -99,15 +97,15 @@ export default function ModelPanel({ tables, relations, setRelations, suggestion
               <option value="full">FULL JOIN</option>
             </select>
 
-            <button className="primary-btn full-width" onClick={createManualJoin}>Create join</button>
+            <button className="primary-btn full-width" onClick={createManualJoin}>Создать связь</button>
           </div>
         </div>
       </div>
 
       <div className="panel glass">
         <div className="panel-header">
-          <h3>Model schema</h3>
-          <span className="small-muted">{relations.length} relations</span>
+          <h3>Схема модели</h3>
+          <span className="small-muted">{relations.length} связей</span>
         </div>
 
         {!relations.length ? (
@@ -123,7 +121,7 @@ export default function ModelPanel({ tables, relations, setRelations, suggestion
                     <div className="small-muted">{relation.joinType.toUpperCase()} · {relation.relationType}</div>
                   </div>
                   <div className="schema-metrics">
-                    <span>{validation?.matchedPercent ?? 0}% matched</span>
+                    <span>{validation?.matchedPercent ?? 0}% совпало</span>
                     <span>L dup {validation?.leftDuplicates ?? 0}</span>
                     <span>R dup {validation?.rightDuplicates ?? 0}</span>
                   </div>
