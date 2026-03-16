@@ -9,8 +9,8 @@ export default function Topbar({ title, fileCount, tableCount }) {
       </div>
 
       <div className="topbar-actions">
-        <div className="pill">Files: {fileCount}</div>
-        <div className="pill">Tables: {tableCount}</div>
+        <div className="pill">Файлы: {fileCount}</div>
+        <div className="pill">Таблицы: {tableCount}</div>
         <div className="avatar">DT</div>
       </div>
     </header>

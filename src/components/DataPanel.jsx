@@ -12,9 +12,9 @@ export default function DataPanel({
     <div className="content-grid">
       <div className="panel glass">
         <div className="panel-header">
-          <h3>Upload datasets</h3>
+          <h3>Загрузка датасетов</h3>
           <label className="primary-btn">
-            Upload
+            Загрузить
             <input type="file" multiple accept=".csv,.xlsx,.xls" onChange={onFilesSelected} hidden />
           </label>
         </div>
@@ -49,8 +49,8 @@ export default function DataPanel({
 
       <div className="panel glass">
         <div className="panel-header">
-          <h3>Tables</h3>
-          <span className="small-muted">{visibleTables.length} ready</span>
+          <h3>Таблицы</h3>
+          <span className="small-muted">{visibleTables.length} готово</span>
         </div>
         <div className="table-list">
           {visibleTables.map((table) => (
@@ -60,7 +60,7 @@ export default function DataPanel({
               onClick={() => setSelectedTableId(table.id)}
             >
               <div>{table.tableName}</div>
-              <div className="small-muted">{table.rows.length} rows · {table.columns.length} cols</div>
+              <div className="small-muted">{table.rows.length} строк · {table.columns.length} колонок</div>
             </button>
           ))}
         </div>

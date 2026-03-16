@@ -21,16 +21,15 @@ function uid(prefix = 'id') {
 }
 
 const defaultConfig = {
-  dimension: '',
+  dimensions: [],
   metric: 'count',
   metricField: '',
-  filterField: '',
-  filterValue: '',
+  filters: [],
   chartMode: 'bar'
 }
 
 export default function App() {
-  const [section, setSection] = useState('Dashboard')
+  const [section, setSection] = useState('Дашборд')
   const [files, setFiles] = useState([])
   const [tables, setTables] = useState([])
   const [sheetSelection, setSheetSelection] = useState({})
@@ -49,7 +48,7 @@ export default function App() {
         setTables(persisted.tables || [])
         setSheetSelection(persisted.sheetSelection || {})
         setRelations(persisted.relations || [])
-        setConfig(persisted.config || defaultConfig)
+        setConfig({ ...defaultConfig, ...(persisted.config || {}) })
         setSavedViews(persisted.savedViews || [])
         setSelectedTableId(persisted.selectedTableId || null)
       }
@@ -88,9 +87,7 @@ export default function App() {
     for (const relation of relations) {
       const leftTable = visibleTables.find((t) => t.id === relation.leftTableId)
       const rightTable = visibleTables.find((t) => t.id === relation.rightTableId)
-      if (leftTable && rightTable) {
-        out[relation.id] = validateRelation(leftTable, rightTable, relation)
-      }
+      if (leftTable && rightTable) out[relation.id] = validateRelation(leftTable, rightTable, relation)
     }
     return out
   }, [relations, visibleTables])
@@ -103,7 +100,6 @@ export default function App() {
     if (!incoming.length) return
     setBusy(true)
     setError('')
-
     try {
       const nextFiles = []
       const nextTables = []
@@ -115,15 +111,13 @@ export default function App() {
       }
 
       const nextSelection = {}
-      for (const file of nextFiles) {
-        nextSelection[file.id] = file.sheetNames
-      }
+      for (const file of nextFiles) nextSelection[file.id] = file.sheetNames
 
       setFiles((prev) => [...prev, ...nextFiles])
       setTables((prev) => [...prev, ...nextTables])
       setSheetSelection((prev) => ({ ...prev, ...nextSelection }))
       setSelectedTableId((current) => current || nextTables[0]?.id || null)
-      setSection('Data')
+      setSection('Данные')
     } catch (err) {
       setError(err.message || 'Не удалось обработать файлы')
     } finally {
@@ -142,21 +136,20 @@ export default function App() {
   }
 
   function saveView() {
-    const name = `View ${savedViews.length + 1}`
+    const name = `Вид ${savedViews.length + 1}`
     setSavedViews((prev) => [...prev, { id: uid('view'), name, ...config }])
-    setSection('Saved Views')
+    setSection('Сохраненные виды')
   }
 
   function loadView(view) {
     setConfig({
-      dimension: view.dimension || '',
+      dimensions: view.dimensions || [],
       metric: view.metric || 'count',
       metricField: view.metricField || '',
-      filterField: view.filterField || '',
-      filterValue: view.filterValue || '',
+      filters: view.filters || [],
       chartMode: view.chartMode || 'bar'
     })
-    setSection('Explore')
+    setSection('Конструктор графиков')
   }
 
   const totalRows = visibleTables.reduce((acc, table) => acc + table.rows.length, 0)
@@ -173,42 +166,58 @@ export default function App() {
         <section className="hero-grid">
           <div className="hero-copy glass">
             <div className="small-muted">Dark glass BI cockpit</div>
-            <h2>Upload, model, explore and save views — without server</h2>
+            <h2>Загружай, объединяй, фильтруй и выводи данные в графики</h2>
             <p>
-              Новый интерфейс собран в стиле твоих референсов: темный SaaS dashboard,
-              карточки, glow-акценты, визуальный BI-поток и локальное хранение через IndexedDB.
+              Теперь интерфейс на русском и с явным BI-конструктором: выбираешь таблицы,
+              строишь связи, задаешь поля для группировки, метрики и внутренние фильтры.
             </p>
+            <div className="button-row">
+              <button className="primary-btn" onClick={() => setSection('Конструктор графиков')}>Открыть конструктор графиков</button>
+              <button className="secondary-btn" onClick={() => setSection('Модель')}>Открыть модель данных</button>
+            </div>
           </div>
 
-          <KpiCard label="Datasets" value={files.length} hint="CSV / XLSX / XLS" />
-          <KpiCard label="Tables" value={visibleTables.length} hint="листов и таблиц в модели" />
-          <KpiCard label="Rows" value={totalRows} hint="строк в локальной аналитике" />
-          <KpiCard label="Relations" value={relations.length} hint="confirmed joins" />
+          <KpiCard label="Датасеты" value={files.length} hint="CSV / XLSX / XLS" />
+          <KpiCard label="Таблицы" value={visibleTables.length} hint="листов и таблиц в модели" />
+          <KpiCard label="Строки" value={totalRows} hint="строк в локальной аналитике" />
+          <KpiCard label="Связи" value={relations.length} hint="подтвержденные join" />
         </section>
 
-        {section === 'Dashboard' && (
+        {section === 'Дашборд' && (
           <div className="stack">
             <div className="dashboard-grid">
-              <ChartCard title="Explore output" data={explore.chartData} mode={config.chartMode} />
-              <ChartCard title="Dataset health" data={[
-                { label: 'Files', value: files.length || 1 },
-                { label: 'Tables', value: visibleTables.length || 1 },
-                { label: 'Rows', value: totalRows || 1 }
+              <ChartCard title="График по текущей конфигурации" data={explore.chartData} mode={config.chartMode} />
+              <ChartCard title="Состояние датасетов" data={[
+                { label: 'Файлы', value: files.length || 1 },
+                { label: 'Таблицы', value: visibleTables.length || 1 },
+                { label: 'Строки', value: totalRows || 1 }
               ]} mode="line" />
-              <ChartCard title="Model quality" data={[
-                { label: 'Relations', value: relations.length || 1 },
-                { label: 'Saved', value: savedViews.length || 1 }
+              <ChartCard title="Качество модели" data={[
+                { label: 'Связи', value: relations.length || 1 },
+                { label: 'Виды', value: savedViews.length || 1 }
               ]} mode="donut" />
             </div>
 
-            <div className="content-grid">
+            <div className="dashboard-grid">
+              <div className="panel glass">
+                <div className="panel-header">
+                  <h3>Как пользоваться инструментом</h3>
+                </div>
+                <div className="steps-list">
+                  <div>1. Зайди в раздел <strong>Данные</strong> и загрузи 1 или несколько файлов.</div>
+                  <div>2. В разделе <strong>Модель</strong> выбери, по каким колонкам объединять таблицы.</div>
+                  <div>3. В разделе <strong>Конструктор графиков</strong> выбери измерения, метрики и фильтры.</div>
+                  <div>4. Сохрани готовый вид в разделе <strong>Сохраненные виды</strong>.</div>
+                </div>
+              </div>
+
               <TablePreview table={selectedTable} />
               <ProfilePanel table={selectedTable} />
             </div>
           </div>
         )}
 
-        {section === 'Data' && (
+        {section === 'Данные' && (
           <div className="stack">
             <DataPanel
               files={files}
@@ -225,7 +234,7 @@ export default function App() {
           </div>
         )}
 
-        {section === 'Model' && (
+        {section === 'Модель' && (
           <ModelPanel
             tables={visibleTables}
             relations={relations}
@@ -235,7 +244,7 @@ export default function App() {
           />
         )}
 
-        {section === 'Explore' && (
+        {section === 'Конструктор графиков' && (
           <ExplorePanel
             modelRows={explore.rows}
             modelColumns={model.columns}
@@ -245,7 +254,7 @@ export default function App() {
           />
         )}
 
-        {section === 'Saved Views' && (
+        {section === 'Сохраненные виды' && (
           <SavedViewsPanel
             savedViews={savedViews}
             currentConfig={config}
@@ -254,21 +263,21 @@ export default function App() {
           />
         )}
 
-        {section === 'Settings' && (
+        {section === 'Настройки' && (
           <div className="panel glass">
             <div className="panel-header">
-              <h3>Workspace settings</h3>
+              <h3>Настройки workspace</h3>
             </div>
             <div className="settings-list">
               <div className="setting-row"><span>Persistence</span><strong>IndexedDB</strong></div>
-              <div className="setting-row"><span>Error handling</span><strong>UI banner + try/catch</strong></div>
-              <div className="setting-row"><span>Exports</span><strong>CSV / XLSX</strong></div>
+              <div className="setting-row"><span>Обработка ошибок</span><strong>UI banner + try/catch</strong></div>
+              <div className="setting-row"><span>Экспорт</span><strong>CSV / XLSX</strong></div>
               <div className="setting-row"><span>Hardening</span><strong>готова база под Web Workers</strong></div>
             </div>
           </div>
         )}
 
-        {busy && <div className="floating-loader">Parsing files locally...</div>}
+        {busy && <div className="floating-loader">Файлы обрабатываются локально...</div>}
       </main>
     </div>
   )

@@ -8,8 +8,8 @@ export default function TablePreview({ table }) {
   return (
     <div className="panel glass">
       <div className="panel-header">
-        <h3>Preview · {table.tableName}</h3>
-        <span className="small-muted">{table.rows.length} rows</span>
+        <h3>Предпросмотр · {table.tableName}</h3>
+        <span className="small-muted">{table.rows.length} строк</span>
       </div>
 
       <div className="table-wrap">
