@@ -24,8 +24,11 @@ const defaultConfig = {
   dimensions: [],
   metric: 'count',
   metricField: '',
+  breakdown: '',
   filters: [],
-  chartMode: 'bar'
+  chartMode: 'bar',
+  sort: 'desc',
+  topN: ''
 }
 
 export default function App() {
