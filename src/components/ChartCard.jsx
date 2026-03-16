@@ -1,44 +1,65 @@
+
 import React from 'react'
 
 export default function ChartCard({ title, data = [], mode = 'bar' }) {
-  const safe = data.slice(0, 8)
-  const max = Math.max(...safe.map((d) => d.value || 0), 1)
+
+  const max = Math.max(...data.map(d=>d.value||0),1)
 
   return (
     <div className="panel glass">
       <div className="panel-header">
         <h3>{title}</h3>
-        <span className="small-muted">{safe.length} items</span>
       </div>
 
-      {safe.length === 0 ? (
-        <div className="empty-state compact">Пока нет данных для графика</div>
-      ) : (
-        <div className="chart-area">
-          {mode === 'donut' ? (
-            <div className="donut-wrap">
-              <svg viewBox="0 0 120 120" className="donut">
-                <circle cx="60" cy="60" r="42" pathLength="100" className="donut-bg" />
-                <circle cx="60" cy="60" r="42" pathLength="100" className="donut-value" strokeDasharray={`${Math.min(100, (safe[0].value / max) * 100)} 100`} />
-              </svg>
-              <div className="donut-center">{safe[0].value}</div>
-            </div>
-          ) : (
-            <div className={`chart-bars ${mode}`}>
-              {safe.map((item) => (
-                <div key={item.label} className="bar-col">
-                  <div
-                    className="bar"
-                    style={{ height: `${Math.max(12, (item.value / max) * 160)}px` }}
-                  />
-                  <div className="bar-label" title={item.label}>{item.label}</div>
-                  <div className="bar-value">{item.value}</div>
-                </div>
+      {!data.length && (
+        <div className="empty-state">Нет данных для построения графика</div>
+      )}
+
+      {mode === "table" && (
+        <div className="table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Категория</th>
+                <th>Значение</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.map((d,i)=>(
+                <tr key={i}>
+                  <td>{d.label}</td>
+                  <td>{d.value}</td>
+                </tr>
               ))}
-            </div>
-          )}
+            </tbody>
+          </table>
         </div>
       )}
+
+      {(mode==="bar" || mode==="line") && (
+        <div className="chart-bars">
+          {data.slice(0,12).map(d=>(
+            <div key={d.label} className="bar-col">
+              <div
+                className="bar"
+                style={{height: Math.max(12,(d.value/max)*160)+"px"}}
+              />
+              <div className="bar-label">{d.label}</div>
+              <div className="bar-value">{d.value}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {mode==="donut" && (
+        <div style={{padding:"30px",textAlign:"center"}}>
+          <div style={{fontSize:"40px",fontWeight:"bold"}}>
+            {data.reduce((a,b)=>a+b.value,0)}
+          </div>
+          <div className="small-muted">суммарное значение</div>
+        </div>
+      )}
+
     </div>
   )
 }

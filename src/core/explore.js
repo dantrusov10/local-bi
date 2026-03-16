@@ -1,30 +1,37 @@
-import { applyFilters } from './filtering.js'
 
-export function buildExploreData(rows, config) {
-  const { dimensions = [], metric, metricField, filters = [] } = config
-  const filtered = applyFilters([...rows], filters)
+export function buildExploreData(rows, config){
 
-  if (!dimensions.length || !metric) {
-    return { rows: filtered, chartData: [] }
-  }
+  const {dimension, metric, metricField, sort="desc"} = config
 
-  const groups = new Map()
-  for (const row of filtered) {
-    const key = dimensions.map((d) => String(row[d] ?? '—')).join(' / ')
-    if (!groups.has(key)) groups.set(key, [])
-    groups.get(key).push(row)
-  }
+  if(!dimension) return {rows, chartData:[]}
 
-  const data = Array.from(groups.entries()).map(([label, items]) => {
-    const values = metricField ? items.map((row) => Number(row[metricField] || 0)) : []
-    let value = 0
-    if (metric === 'count') value = items.length
-    if (metric === 'sum') value = values.reduce((a, b) => a + b, 0)
-    if (metric === 'avg') value = values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0
-    if (metric === 'max') value = values.length ? Math.max(...values) : 0
-    if (metric === 'min') value = values.length ? Math.min(...values) : 0
-    return { label, value: Number(value.toFixed(2)) }
-  }).sort((a, b) => b.value - a.value)
+  const groups = {}
 
-  return { rows: filtered, chartData: data }
+  rows.forEach(r=>{
+    const key = r[dimension] ?? "—"
+    if(!groups[key]) groups[key]=[]
+    groups[key].push(r)
+  })
+
+  const data = Object.entries(groups).map(([label,items])=>{
+
+    const values = metricField
+      ? items.map(i=>Number(i[metricField]||0))
+      : []
+
+    let value=0
+
+    if(metric==="count") value=items.length
+    if(metric==="sum") value=values.reduce((a,b)=>a+b,0)
+    if(metric==="avg") value=values.length ? values.reduce((a,b)=>a+b,0)/values.length : 0
+    if(metric==="max") value=Math.max(...values,0)
+    if(metric==="min") value=Math.min(...values,0)
+
+    return {label,value:Math.round(value*100)/100}
+
+  })
+
+  data.sort((a,b)=> sort==="asc" ? a.value-b.value : b.value-a.value)
+
+  return {rows, chartData:data}
 }
