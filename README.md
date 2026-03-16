@@ -1,13 +1,22 @@
-# Local BI No Server
+# NewLevel BI · No Server · Modern UI
 
-Исправленная версия репозитория для Vercel.
+Обновленная версия репозитория в стиле референсов:
+- dark glass dashboard
+- upload CSV/XLSX
+- preview tables
+- column type detection
+- suggested joins
+- manual join
+- relation validation
+- model schema
+- explore builder
+- chart / table output
+- saved views
+- local persistence via IndexedDB
+- exports CSV/XLSX
 
-## Что исправлено
-- заменен неверный пакет `duckdb-wasm` на `@duckdb/duckdb-wasm`
-- добавлен `@vitejs/plugin-react`
-
-## Vercel
-Настройки сборки:
+## Deploy
+Vercel:
 - Install Command: `npm install`
 - Build Command: `npm run build`
 - Output Directory: `dist`
