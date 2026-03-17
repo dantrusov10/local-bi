@@ -991,3 +991,128 @@ font-size:12px;
     grid-template-columns: 1fr;
   }
 }
+
+
+.dashboard-widgets-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 18px;
+}
+
+.join-preview-list {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.align-end {
+  align-items: end;
+}
+
+@media (max-width: 1280px) {
+  .dashboard-widgets-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+.dashboard-tabs {
+  display: grid;
+  gap: 10px;
+}
+.dashboard-tab {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255,255,255,0.03);
+}
+.dashboard-tab.active {
+  background: linear-gradient(90deg, rgba(73, 167, 255, 0.18), rgba(86, 234, 219, 0.08));
+}
+.dashboard-tab-main, .dashboard-tab-delete {
+  border: 0;
+  background: transparent;
+  color: #dfe8fb;
+  cursor: pointer;
+}
+.dashboard-tab-main {
+  padding: 14px;
+  text-align: left;
+}
+.dashboard-tab-delete {
+  padding: 0 14px;
+  font-size: 22px;
+}
+.dashboard-tab-title {
+  font-weight: 700;
+}
+.dashboard-name-input {
+  min-width: 240px;
+}
+.widget-size-wide {
+  grid-column: span 2;
+}
+
+.model-canvas {
+  display: grid;
+  gap: 16px;
+}
+.model-canvas-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap: 14px;
+}
+.model-card {
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.03);
+}
+.model-card-title {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.model-card-meta {
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+.model-fields {
+  display: grid;
+  gap: 8px;
+}
+.model-field {
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.04);
+  color: #dfe8fb;
+  font-size: 13px;
+}
+.model-relations {
+  display: grid;
+  gap: 8px;
+}
+.model-relation-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.04);
+}
+.model-relation-line em {
+  color: var(--accent-2);
+  font-style: normal;
+}
+
+@media (max-width: 1280px) {
+  .widget-size-wide {
+    grid-column: span 1;
+  }
+  .model-canvas-grid {
+    grid-template-columns: 1fr;
+  }
+}

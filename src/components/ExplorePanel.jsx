@@ -1,6 +1,7 @@
 import React from 'react'
 import ChartCard from './ChartCard.jsx'
 import SearchSelect from './SearchSelect.jsx'
+import PivotTable from './PivotTable.jsx'
 import { exportRowsToCsv, exportRowsToXlsx } from '../core/export.js'
 import { operatorLabels } from '../core/filtering.js'
 
@@ -29,7 +30,9 @@ export default function ExplorePanel({
   config,
   setConfig,
   chartData,
-  secondaryData
+  secondaryData,
+  pivotData,
+  onAddWidget
 }) {
   const numericFields = modelColumns.filter((field) =>
     modelRows.some((row) => row[field] !== null && !Number.isNaN(Number(row[field])))
@@ -154,6 +157,9 @@ export default function ExplorePanel({
                   onChange={(e) => setConfig((prev) => ({ ...prev, topN: e.target.value }))}
                 />
               </div>
+              <div className="button-row align-end">
+                <button className="primary-btn" onClick={onAddWidget}>Добавить на дашборд</button>
+              </div>
             </div>
           </div>
 
@@ -189,19 +195,38 @@ export default function ExplorePanel({
             </div>
           </div>
 
+          <div className="builder-block">
+            <div className="builder-title">4. Pivot-режим</div>
+            <div className="builder-grid-2">
+              <SearchSelect
+                label="Строки pivot"
+                value={config.pivotRows || []}
+                onChange={(v) => setConfig((prev) => ({ ...prev, pivotRows: v }))}
+                options={allFieldOptions}
+                placeholder="Выбери поля строк"
+                multiple
+              />
+              <SearchSelect
+                label="Колонки pivot"
+                value={config.pivotColumns || []}
+                onChange={(v) => setConfig((prev) => ({ ...prev, pivotColumns: v }))}
+                options={allFieldOptions}
+                placeholder="Выбери поля колонок"
+                multiple
+              />
+            </div>
+          </div>
+
           <div className="sql-box">
 {`Логика текущего вывода
 Измерения: ${(config.dimensions || []).length ? (config.dimensions || []).join(', ') : 'не выбраны'}
 Разбивка: ${config.breakdown || 'без разбивки'}
 Метрика 1: ${config.metric || 'не выбрана'}(${config.metricField || '*'})
 Метрика 2: ${config.secondMetric || 'нет'}(${config.secondMetricField || '*'})
+Pivot строки: ${(config.pivotRows || []).join(', ') || 'не выбраны'}
+Pivot колонки: ${(config.pivotColumns || []).join(', ') || 'не выбраны'}
 
-Тип графика: ${chartTypes.find((x) => x.value === config.chartMode)?.label || config.chartMode}
-Сортировка: ${config.sort === 'asc' ? 'по возрастанию' : 'по убыванию'}
 Top N: ${config.topN || 'без ограничения'}
-
-Фильтры:
-${filters.length ? filters.map((f) => `- ${f.field || 'поле'} ${operatorLabels[f.operator] || f.operator} ${f.value || ''}`).join('\n') : '- нет фильтров'}
 `}
           </div>
 
@@ -212,6 +237,14 @@ ${filters.length ? filters.map((f) => `- ${f.field || 'поле'} ${operatorLabe
         </div>
 
         <ChartCard title="Предпросмотр визуала" data={chartData} secondaryData={secondaryData} mode={config.chartMode} />
+      </div>
+
+      <div className="panel glass">
+        <div className="panel-header">
+          <h3>Pivot-таблица</h3>
+          <span className="small-muted">{pivotData.length} ячеек</span>
+        </div>
+        <PivotTable data={pivotData} rows={config.pivotRows || []} columns={config.pivotColumns || []} />
       </div>
 
       <div className="panel glass">

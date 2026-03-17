@@ -20,11 +20,15 @@ export function buildExploreData(rows, config) {
     secondMetricField = '',
     filters = [],
     sort = 'desc',
-    topN = ''
+    topN = '',
+    pivotRows = [],
+    pivotColumns = []
   } = config
 
   const filtered = applyFilters([...rows], filters)
-  if (!dimensions.length || !metric) return { rows: filtered, chartData: [], secondaryData: [] }
+  if (!dimensions.length || !metric) {
+    return { rows: filtered, chartData: [], secondaryData: [], pivotData: [] }
+  }
 
   const groups = new Map()
   for (const row of filtered) {
@@ -45,11 +49,30 @@ export function buildExploreData(rows, config) {
   const limit = Number(topN || 0)
   if (!Number.isNaN(limit) && limit > 0) data = data.slice(0, limit)
 
+  let pivotData = []
+  if (pivotRows.length && pivotColumns.length) {
+    const pivotGroups = new Map()
+    for (const row of filtered) {
+      const rowKey = pivotRows.map((f) => String(row[f] ?? '—')).join(' / ')
+      const colKey = pivotColumns.map((f) => String(row[f] ?? '—')).join(' / ')
+      const key = `${rowKey}__${colKey}`
+      if (!pivotGroups.has(key)) pivotGroups.set(key, { rowKey, colKey, items: [] })
+      pivotGroups.get(key).items.push(row)
+    }
+
+    pivotData = Array.from(pivotGroups.values()).map((x) => ({
+      rowKey: x.rowKey,
+      colKey: x.colKey,
+      value: Number(calcMetric(x.items, metric, metricField).toFixed(2))
+    }))
+  }
+
   return {
     rows: filtered,
     chartData: data,
     secondaryData: data
       .filter((x) => x.value2 !== null && x.value2 !== undefined)
-      .map((x) => ({ label: x.label, value: x.value2 }))
+      .map((x) => ({ label: x.label, value: x.value2 })),
+    pivotData
   }
 }
