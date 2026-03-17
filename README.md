@@ -111,3 +111,10 @@ Vercel:
 - добавлены unit tests: metrics, permissions, explore
 - package.json дополнен vitest и scripts test/test:watch
 - вручную Excel не прогонялся в этой версии, как и просили; приоритет был на архитектуру, тесты и стабильность
+
+
+## Обновление v13.5 Build + Smoke
+- добавлен `npm run smoke`
+- добавлен `scripts/smoke-check.mjs`
+- добавлен `BUILD_AND_SMOKE_REPORT.md`
+- автоматически прогнаны build и smoke-check
