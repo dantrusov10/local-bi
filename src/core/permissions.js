@@ -6,22 +6,28 @@ export const ROLE_OPTIONS = [
 ]
 
 export function applyRLS(rows, security = {}) {
-  const role = security.role || 'admin'
-  const userName = security.userName || ''
-  const teamValue = security.teamValue || ''
+  const role = security.role || 'viewer'
+  const userName = String(security.userName || '')
+  const teamValue = String(security.teamValue || '')
   const ownerField = security.ownerField || 'owner'
   const teamField = security.teamField || 'team'
 
   if (role === 'admin') return rows
-  if (role === 'viewer') return rows
 
   if (role === 'manager') {
-    return rows.filter((r) => String(r[ownerField] ?? '') === String(userName))
+    if (!userName) return []
+    return rows.filter((r) => String(r[ownerField] ?? '') === userName)
   }
 
   if (role === 'teamlead') {
-    return rows.filter((r) => String(r[teamField] ?? '') === String(teamValue))
+    if (!teamValue) return []
+    return rows.filter((r) => String(r[teamField] ?? '') === teamValue)
   }
 
-  return rows
+  if (role === 'viewer') {
+    if (userName) return rows.filter((r) => String(r[ownerField] ?? '') === userName)
+    return []
+  }
+
+  return []
 }

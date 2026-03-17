@@ -1,23 +1,29 @@
-import * as XLSX from 'xlsx'
-import Papa from 'papaparse'
+import { uid } from './utils.js'
 
-function uid(prefix = 'id') {
-  return `${prefix}_${Math.random().toString(36).slice(2, 10)}`
-}
+let worker
+let listeners = new Map()
 
-function normalizeValue(value) {
-  if (value === undefined || value === null || value === '') return null
-  if (typeof value === 'string') return value.trim()
-  return value
-}
-
-function normalizeRows(rows) {
-  return rows.map((row) => {
-    const next = {}
-    for (const key of Object.keys(row || {})) {
-      next[key] = normalizeValue(row[key])
+function getWorker() {
+  if (!worker) {
+    worker = new Worker(new URL('../workers/dataWorker.js', import.meta.url), { type: 'module' })
+    worker.onmessage = (event) => {
+      const { id, ok, result, error } = event.data
+      const handler = listeners.get(id)
+      if (!handler) return
+      listeners.delete(id)
+      if (ok) handler.resolve(result)
+      else handler.reject(new Error(error || 'Ошибка worker'))
     }
-    return next
+  }
+  return worker
+}
+
+function runWorker(type, payload) {
+  const id = uid('task')
+  const w = getWorker()
+  return new Promise((resolve, reject) => {
+    listeners.set(id, { resolve, reject })
+    w.postMessage({ id, type, payload }, payload.transfer || [])
   })
 }
 
@@ -30,73 +36,38 @@ export function detectSourceType(fileName = '') {
 
 export async function parseFile(file) {
   const type = detectSourceType(file.name)
-  if (type === 'csv') return parseCsv(file)
-  if (type === 'xlsx') return parseExcel(file)
-  throw new Error(`Неподдерживаемый тип файла: ${file.name}`)
-}
-
-async function parseCsv(file) {
-  const rows = await new Promise((resolve, reject) => {
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (result) => resolve(result.data || []),
-      error: reject
-    })
-  })
-
-  const normalized = normalizeRows(rows)
-  const columns = Object.keys(normalized[0] || {})
   const fileId = uid('file')
-  return {
-    fileAsset: {
-      id: fileId,
-      name: file.name,
-      size: file.size,
-      sourceType: 'csv',
-      sheetNames: ['Data']
-    },
-    tables: [{
-      id: uid('table'),
+  const fileAsset = {
+    id: fileId,
+    name: file.name,
+    size: file.size,
+    sourceType: type,
+    sheetNames: type === 'csv' ? ['Data'] : []
+  }
+
+  if (type === 'csv') {
+    const text = await file.text()
+    return runWorker('parse_csv', {
+      text,
       fileId,
       fileName: file.name,
+      tableId: uid('table'),
       tableName: file.name.replace(/\.[^.]+$/, ''),
-      sourceType: 'csv',
-      sheetName: 'Data',
-      columns,
-      rows: normalized
-    }]
+      fileAsset
+    })
   }
-}
 
-async function parseExcel(file) {
-  const buffer = await file.arrayBuffer()
-  const workbook = XLSX.read(buffer, { type: 'array' })
-  const fileId = uid('file')
-  const tables = workbook.SheetNames.map((sheetName) => {
-    const raw = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: null })
-    const rows = normalizeRows(raw)
-    const columns = Object.keys(rows[0] || {})
-    return {
-      id: uid('table'),
+  if (type === 'xlsx') {
+    const buffer = await file.arrayBuffer()
+    return runWorker('parse_xlsx', {
+      buffer,
+      transfer: [buffer],
       fileId,
       fileName: file.name,
-      tableName: `${file.name.replace(/\.[^.]+$/, '')}_${sheetName}`,
-      sourceType: 'xlsx',
-      sheetName,
-      columns,
-      rows
-    }
-  })
-
-  return {
-    fileAsset: {
-      id: fileId,
-      name: file.name,
-      size: file.size,
-      sourceType: 'xlsx',
-      sheetNames: workbook.SheetNames
-    },
-    tables
+      baseTableName: file.name.replace(/\.[^.]+$/, ''),
+      fileAsset
+    })
   }
+
+  throw new Error(`Неподдерживаемый тип файла: ${file.name}`)
 }

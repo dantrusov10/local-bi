@@ -85,3 +85,12 @@ Vercel:
 - реальный write-back через API endpoint
 - white label настройки применяются к интерфейсу через CSS variables
 - все разделы и кнопки на русском
+
+
+## Обновление v13.2 Stabilization
+- убран new Function из metrics.js, добавлен безопасный формульный parser
+- explore.js переписан: COUNT / SUM / AVG / MAX / MIN / semantic metrics / pivot / period compare
+- RLS переведен в deny-by-default для viewer и неизвестных ролей
+- подключен Web Worker для parsing + profiling CSV/XLSX
+- uid и normalizeJoinKey вынесены в src/core/utils.js
+- нормализация join-ключей разделена на soft и loose режимы
