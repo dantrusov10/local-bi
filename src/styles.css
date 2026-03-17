@@ -905,3 +905,89 @@ font-size:12px;
     grid-template-columns: 1fr;
   }
 }
+
+
+.search-select-value-area {
+  min-width: 0;
+  flex: 1;
+}
+.search-select-placeholder {
+  color: #9ab5de;
+  display: block;
+  text-align: left;
+}
+.search-select-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.search-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(73, 167, 255, 0.14);
+  color: #dfe8fb;
+  font-size: 12px;
+}
+.search-chip button {
+  border: 0;
+  background: transparent;
+  color: #dfe8fb;
+  cursor: pointer;
+  padding: 0;
+}
+.search-chip.more { opacity: 0.85; }
+
+.bar-stack {
+  position: relative;
+  width: 40px;
+  min-height: 190px;
+  display: flex;
+  align-items: end;
+  justify-content: center;
+}
+.bar-stack .bar {
+  position: absolute;
+  bottom: 0;
+  width: 40px;
+  border-radius: 12px;
+}
+.bar-stack .bar.overlay {
+  width: 24px;
+  opacity: 0.95;
+}
+
+.funnel-wrap {
+  display: grid;
+  gap: 12px;
+}
+.funnel-row {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 12px;
+  align-items: center;
+}
+.funnel-label {
+  color: #dce8ff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.funnel-shape {
+  min-height: 42px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 14px;
+  color: white;
+  font-weight: 700;
+}
+
+@media (max-width: 1280px) {
+  .funnel-row {
+    grid-template-columns: 1fr;
+  }
+}
