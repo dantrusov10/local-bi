@@ -352,6 +352,21 @@ export default function App() {
               onMoveDown={(id) => moveWidget(id, 'down')}
               onRemove={removeWidget}
               onResize={resizeWidget}
+              onRename={(id,title)=>setDashboards(prev=>prev.map(d=>d.id===activeDashboard.id?{
+                ...d,
+                widgets:d.widgets.map(w=>w.id===id?{...w,title}:w)
+              }:d))}
+              onDrag={(sourceId,targetId)=>{
+                setDashboards(prev=>prev.map(d=>{
+                  if(d.id!==activeDashboard.id) return d
+                  const w=[...d.widgets]
+                  const s=w.findIndex(x=>x.id===sourceId)
+                  const t=w.findIndex(x=>x.id===targetId)
+                  const item=w.splice(s,1)[0]
+                  w.splice(t,0,item)
+                  return {...d,widgets:w}
+                }))
+              }}
             />
 
             <DrilldownPanel title={drilldown.label} rows={drilldown.rows} columns={model.columns} />

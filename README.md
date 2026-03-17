@@ -67,3 +67,13 @@ Vercel:
 - drill-down в таблицу исходных данных
 - period comparison: предыдущий период / YTD
 - все разделы и кнопки на русском языке
+
+
+## v13 Enterprise
+- RLS permissions
+- API/webhooks
+- write-back
+- white label
+- computed metrics
+- stacked + legend (база)
+- dashboard templates
