@@ -22,6 +22,10 @@ import { suggestJoins, validateRelation } from './core/matching.js'
 import { buildModelRows } from './core/modeling.js'
 import { buildExploreData } from './core/explore.js'
 import { saveState, loadState } from './core/persistence.js'
+import { applyRLS } from './core/permissions.js'
+import { applyTheme, defaultTheme } from './core/theme.js'
+import { sendWebhook, writeBack } from './core/api.js'
+import SettingsEnterprisePanel from './components/SettingsEnterprisePanel.jsx'
 
 function uid(prefix = 'id') {
   return `${prefix}_${Math.random().toString(36).slice(2, 10)}`
@@ -63,6 +67,8 @@ export default function App() {
   const [semanticMetrics, setSemanticMetrics] = useState([])
   const [globalFilters, setGlobalFilters] = useState([])
   const [drilldown, setDrilldown] = useState({ label: '', rows: [] })
+  const [security, setSecurity] = useState({ role: 'admin', userName: '', teamValue: '', ownerField: 'owner', teamField: 'team', webhookUrl: '', writebackUrl: '' })
+  const [theme, setTheme] = useState(defaultTheme)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
@@ -82,6 +88,8 @@ export default function App() {
         setSelectedTableId(persisted.selectedTableId || null)
         setSemanticMetrics(persisted.semanticMetrics || [])
         setGlobalFilters(persisted.globalFilters || [])
+        setSecurity(persisted.security || { role: 'admin', userName: '', teamValue: '', ownerField: 'owner', teamField: 'team', webhookUrl: '', writebackUrl: '' })
+        setTheme(persisted.theme || defaultTheme)
       } else {
         const init = makeDefaultDashboard()
         setDashboards([init])
@@ -102,9 +110,11 @@ export default function App() {
       currentDashboardId,
       selectedTableId,
       semanticMetrics,
-      globalFilters
+      globalFilters,
+      security,
+      theme
     })
-  }, [files, tables, sheetSelection, relations, config, savedViews, dashboards, currentDashboardId, selectedTableId, semanticMetrics, globalFilters])
+  }, [files, tables, sheetSelection, relations, config, savedViews, dashboards, currentDashboardId, selectedTableId, semanticMetrics, globalFilters, security, theme])
 
   const visibleTables = useMemo(() => (
     tables.filter((table) => {
@@ -132,15 +142,20 @@ export default function App() {
   }, [relations, visibleTables])
 
   const model = useMemo(() => buildModelRows(visibleTables, relations), [visibleTables, relations])
+  const securedRows = useMemo(() => applyRLS(model.rows, security), [model.rows, security])
   const explore = useMemo(
-    () => buildExploreData(model.rows, config, semanticMetrics, globalFilters),
-    [model.rows, config, semanticMetrics, globalFilters]
+    () => buildExploreData(securedRows, config, semanticMetrics, globalFilters),
+    [securedRows, config, semanticMetrics, globalFilters]
   )
 
   const activeDashboard = useMemo(
     () => dashboards.find((d) => d.id === currentDashboardId) || dashboards[0] || null,
     [dashboards, currentDashboardId]
   )
+
+  useEffect(() => {
+    applyTheme(theme)
+  }, [theme])
 
   async function handleFilesSelected(event) {
     const incoming = Array.from(event.target.files || [])
@@ -284,6 +299,25 @@ export default function App() {
       return value
     })
     setDrilldown({ label, rows })
+  }
+
+
+  async function handleSendWebhook({ event, payload }) {
+    try {
+      const result = await sendWebhook({ url: security.webhookUrl, event, payload })
+      return JSON.stringify(result, null, 2)
+    } catch (e) {
+      return e.message || 'Ошибка webhook'
+    }
+  }
+
+  async function handleWriteBack({ row }) {
+    try {
+      const result = await writeBack({ url: security.writebackUrl, row })
+      return JSON.stringify(result, null, 2)
+    } catch (e) {
+      return e.message || 'Ошибка write-back'
+    }
   }
 
   const totalRows = visibleTables.reduce((acc, table) => acc + table.rows.length, 0)
@@ -450,18 +484,16 @@ export default function App() {
         )}
 
         {section === 'Настройки' && (
-          <div className="panel glass">
-            <div className="panel-header">
-              <h3>Настройки workspace</h3>
-            </div>
-            <div className="settings-list">
-              <div className="setting-row"><span>Persistence</span><strong>IndexedDB</strong></div>
-              <div className="setting-row"><span>Обработка ошибок</span><strong>UI banner + try/catch</strong></div>
-              <div className="setting-row"><span>Экспорт</span><strong>CSV / XLSX</strong></div>
-              <div className="setting-row"><span>Semantic Layer</span><strong>централизованные бизнес-метрики</strong></div>
-              <div className="setting-row"><span>Global Filters</span><strong>на весь дашборд</strong></div>
-            </div>
-          </div>
+          <SettingsEnterprisePanel
+            security={security}
+            setSecurity={setSecurity}
+            theme={theme}
+            setTheme={setTheme}
+            modelRows={securedRows}
+            drilldownRows={drilldown.rows}
+            onSendWebhook={handleSendWebhook}
+            onWriteBack={handleWriteBack}
+          />
         )}
 
         {busy && <div className="floating-loader">Файлы обрабатываются локально...</div>}

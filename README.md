@@ -77,3 +77,11 @@ Vercel:
 - computed metrics
 - stacked + legend (база)
 - dashboard templates
+
+
+## Обновление v13.1
+- полноценнее RLS: admin / teamlead / manager / viewer
+- реальные HTTP webhooks через fetch
+- реальный write-back через API endpoint
+- white label настройки применяются к интерфейсу через CSS variables
+- все разделы и кнопки на русском
