@@ -16,6 +16,7 @@ import ModelCanvas from './components/ModelCanvas.jsx'
 import GlobalFiltersBar from './components/GlobalFiltersBar.jsx'
 import SemanticMetricsPanel from './components/SemanticMetricsPanel.jsx'
 import DrilldownPanel from './components/DrilldownPanel.jsx'
+import DataDiagnosticsPanel from './components/DataDiagnosticsPanel.jsx'
 import { parseFile } from './core/parser.js'
 import { suggestJoins, validateRelation } from './core/matching.js'
 import { buildModelRows } from './core/modeling.js'
@@ -65,6 +66,7 @@ export default function App() {
   const [drilldown, setDrilldown] = useState({ label: '', rows: [] })
   const [security, setSecurity] = useState({ role: 'admin', userName: '', teamValue: '', ownerField: 'owner', teamField: 'team', webhookUrl: '', writebackUrl: '' })
   const [theme, setTheme] = useState(defaultTheme)
+  const [qaLogs, setQaLogs] = useState([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
@@ -86,6 +88,7 @@ export default function App() {
         setGlobalFilters(persisted.globalFilters || [])
         setSecurity(persisted.security || { role: 'admin', userName: '', teamValue: '', ownerField: 'owner', teamField: 'team', webhookUrl: '', writebackUrl: '' })
         setTheme(persisted.theme || defaultTheme)
+        setQaLogs(persisted.qaLogs || [])
       } else {
         const init = makeDefaultDashboard()
         setDashboards([init])
@@ -108,9 +111,10 @@ export default function App() {
       semanticMetrics,
       globalFilters,
       security,
-      theme
+      theme,
+      qaLogs
     })
-  }, [files, tables, sheetSelection, relations, config, savedViews, dashboards, currentDashboardId, selectedTableId, semanticMetrics, globalFilters, security, theme])
+  }, [files, tables, sheetSelection, relations, config, savedViews, dashboards, currentDashboardId, selectedTableId, semanticMetrics, globalFilters, security, theme, qaLogs])
 
   const visibleTables = useMemo(() => (
     tables.filter((table) => {
@@ -422,6 +426,7 @@ export default function App() {
               <TablePreview table={selectedTable} />
               <ProfilePanel table={selectedTable} />
             </div>
+            <DataDiagnosticsPanel qaLogs={qaLogs} />
           </div>
         )}
 
