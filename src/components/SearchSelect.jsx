@@ -14,9 +14,7 @@ export default function SearchSelect({
 
   useEffect(() => {
     function onDocClick(e) {
-      if (rootRef.current && !rootRef.current.contains(e.target)) {
-        setOpen(false)
-      }
+      if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false)
     }
     document.addEventListener('mousedown', onDocClick)
     return () => document.removeEventListener('mousedown', onDocClick)
@@ -28,21 +26,13 @@ export default function SearchSelect({
     return options.filter((o) => String(o.label || o.value).toLowerCase().includes(q))
   }, [options, query])
 
-  const selectedLabel = useMemo(() => {
-    if (multiple) {
-      const arr = Array.isArray(value) ? value : []
-      return arr.length ? arr.join(', ') : placeholder
-    }
-    const found = options.find((o) => o.value === value)
-    return found ? found.label : placeholder
-  }, [value, options, multiple, placeholder])
+  const selectedValues = multiple ? (Array.isArray(value) ? value : []) : [value].filter(Boolean)
 
   function pick(optionValue) {
     if (multiple) {
-      const arr = Array.isArray(value) ? value : []
-      const next = arr.includes(optionValue)
-        ? arr.filter((x) => x !== optionValue)
-        : [...arr, optionValue]
+      const next = selectedValues.includes(optionValue)
+        ? selectedValues.filter((x) => x !== optionValue)
+        : [...selectedValues, optionValue]
       onChange(next)
       return
     }
@@ -50,14 +40,31 @@ export default function SearchSelect({
     setOpen(false)
   }
 
-  const currentMulti = Array.isArray(value) ? value : []
+  function removeChip(chip) {
+    if (!multiple) return
+    onChange(selectedValues.filter((x) => x !== chip))
+  }
 
   return (
     <div className="search-select" ref={rootRef}>
       {label && <div className="search-select-label">{label}</div>}
 
       <button type="button" className={`search-select-trigger ${open ? 'open' : ''}`} onClick={() => setOpen((s) => !s)}>
-        <span className="search-select-value">{selectedLabel}</span>
+        <div className="search-select-value-area">
+          {!selectedValues.length && <span className="search-select-placeholder">{placeholder}</span>}
+          {!!selectedValues.length && !multiple && <span className="search-select-value">{selectedValues[0]}</span>}
+          {!!selectedValues.length && multiple && (
+            <div className="search-select-chips">
+              {selectedValues.slice(0, 3).map((chip) => (
+                <span key={chip} className="search-chip">
+                  {chip}
+                  <button type="button" onClick={(e) => { e.stopPropagation(); removeChip(chip) }}>×</button>
+                </span>
+              ))}
+              {selectedValues.length > 3 && <span className="search-chip more">+{selectedValues.length - 3}</span>}
+            </div>
+          )}
+        </div>
         <span className="search-select-arrow">▾</span>
       </button>
 
@@ -73,9 +80,8 @@ export default function SearchSelect({
 
           <div className="search-select-list">
             {!filtered.length && <div className="search-select-empty">Ничего не найдено</div>}
-
             {filtered.map((option) => {
-              const active = multiple ? currentMulti.includes(option.value) : value === option.value
+              const active = multiple ? selectedValues.includes(option.value) : value === option.value
               return (
                 <button
                   key={option.value}

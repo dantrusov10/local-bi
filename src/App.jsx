@@ -24,6 +24,8 @@ const defaultConfig = {
   dimensions: [],
   metric: 'count',
   metricField: '',
+  secondMetric: '',
+  secondMetricField: '',
   breakdown: '',
   filters: [],
   chartMode: 'bar',
@@ -252,6 +254,7 @@ export default function App() {
             modelRows={explore.rows}
             modelColumns={model.columns}
             chartData={explore.chartData}
+            secondaryData={explore.secondaryData}
             config={config}
             setConfig={setConfig}
           />
