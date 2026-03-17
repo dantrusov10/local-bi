@@ -9,6 +9,10 @@ import ModelPanel from './components/ModelPanel.jsx'
 import ExplorePanel from './components/ExplorePanel.jsx'
 import SavedViewsPanel from './components/SavedViewsPanel.jsx'
 import ChartCard from './components/ChartCard.jsx'
+import DashboardBoard from './components/DashboardBoard.jsx'
+import DashboardManager from './components/DashboardManager.jsx'
+import JoinPreview from './components/JoinPreview.jsx'
+import ModelCanvas from './components/ModelCanvas.jsx'
 import { parseFile } from './core/parser.js'
 import { profileTable } from './core/profiling.js'
 import { suggestJoins, validateRelation } from './core/matching.js'
@@ -30,7 +34,13 @@ const defaultConfig = {
   filters: [],
   chartMode: 'bar',
   sort: 'desc',
-  topN: ''
+  topN: '',
+  pivotRows: [],
+  pivotColumns: []
+}
+
+function makeDefaultDashboard() {
+  return { id: uid('dashboard'), name: 'Основной дашборд', widgets: [] }
 }
 
 export default function App() {
@@ -42,6 +52,8 @@ export default function App() {
   const [relations, setRelations] = useState([])
   const [config, setConfig] = useState(defaultConfig)
   const [savedViews, setSavedViews] = useState([])
+  const [dashboards, setDashboards] = useState([makeDefaultDashboard()])
+  const [currentDashboardId, setCurrentDashboardId] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
@@ -55,7 +67,14 @@ export default function App() {
         setRelations(persisted.relations || [])
         setConfig({ ...defaultConfig, ...(persisted.config || {}) })
         setSavedViews(persisted.savedViews || [])
+        const persistedDashboards = persisted.dashboards?.length ? persisted.dashboards : [makeDefaultDashboard()]
+        setDashboards(persistedDashboards)
+        setCurrentDashboardId(persisted.currentDashboardId || persistedDashboards[0]?.id || '')
         setSelectedTableId(persisted.selectedTableId || null)
+      } else {
+        const init = makeDefaultDashboard()
+        setDashboards([init])
+        setCurrentDashboardId(init.id)
       }
     })()
   }, [])
@@ -68,9 +87,11 @@ export default function App() {
       relations,
       config,
       savedViews,
+      dashboards,
+      currentDashboardId,
       selectedTableId
     })
-  }, [files, tables, sheetSelection, relations, config, savedViews, selectedTableId])
+  }, [files, tables, sheetSelection, relations, config, savedViews, dashboards, currentDashboardId, selectedTableId])
 
   const visibleTables = useMemo(() => (
     tables.filter((table) => {
@@ -99,6 +120,11 @@ export default function App() {
 
   const model = useMemo(() => buildModelRows(visibleTables, relations), [visibleTables, relations])
   const explore = useMemo(() => buildExploreData(model.rows, config), [model.rows, config])
+
+  const activeDashboard = useMemo(
+    () => dashboards.find((d) => d.id === currentDashboardId) || dashboards[0] || null,
+    [dashboards, currentDashboardId]
+  )
 
   async function handleFilesSelected(event) {
     const incoming = Array.from(event.target.files || [])
@@ -151,10 +177,79 @@ export default function App() {
       dimensions: view.dimensions || [],
       metric: view.metric || 'count',
       metricField: view.metricField || '',
+      secondMetric: view.secondMetric || '',
+      secondMetricField: view.secondMetricField || '',
+      breakdown: view.breakdown || '',
       filters: view.filters || [],
-      chartMode: view.chartMode || 'bar'
+      chartMode: view.chartMode || 'bar',
+      sort: view.sort || 'desc',
+      topN: view.topN || '',
+      pivotRows: view.pivotRows || [],
+      pivotColumns: view.pivotColumns || []
     })
     setSection('Конструктор графиков')
+  }
+
+  function createDashboard(name) {
+    const db = { id: uid('dashboard'), name, widgets: [] }
+    setDashboards((prev) => [...prev, db])
+    setCurrentDashboardId(db.id)
+  }
+
+  function deleteDashboard(id) {
+    setDashboards((prev) => {
+      const next = prev.filter((d) => d.id !== id)
+      if (!next.length) {
+        const db = makeDefaultDashboard()
+        setCurrentDashboardId(db.id)
+        return [db]
+      }
+      if (currentDashboardId === id) setCurrentDashboardId(next[0].id)
+      return next
+    })
+  }
+
+  function addCurrentWidget() {
+    if (!activeDashboard) return
+    const widget = {
+      id: uid('widget'),
+      title: `Виджет ${(activeDashboard.widgets || []).length + 1}`,
+      chartMode: config.chartMode,
+      dimensions: config.dimensions || [],
+      chartData: explore.chartData,
+      secondaryData: explore.secondaryData,
+      size: 'normal'
+    }
+
+    setDashboards((prev) => prev.map((d) => d.id === activeDashboard.id ? { ...d, widgets: [...(d.widgets || []), widget] } : d))
+    setSection('Дашборд')
+  }
+
+  function moveWidget(id, dir) {
+    if (!activeDashboard) return
+    setDashboards((prev) => prev.map((d) => {
+      if (d.id !== activeDashboard.id) return d
+      const widgets = [...(d.widgets || [])]
+      const idx = widgets.findIndex((x) => x.id === id)
+      if (idx === -1) return d
+      const swap = dir === 'up' ? idx - 1 : idx + 1
+      if (swap < 0 || swap >= widgets.length) return d
+      ;[widgets[idx], widgets[swap]] = [widgets[swap], widgets[idx]]
+      return { ...d, widgets }
+    }))
+  }
+
+  function removeWidget(id) {
+    if (!activeDashboard) return
+    setDashboards((prev) => prev.map((d) => d.id === activeDashboard.id ? { ...d, widgets: (d.widgets || []).filter((x) => x.id !== id) } : d))
+  }
+
+  function resizeWidget(id, size) {
+    if (!activeDashboard) return
+    setDashboards((prev) => prev.map((d) => d.id === activeDashboard.id ? {
+      ...d,
+      widgets: (d.widgets || []).map((x) => x.id === id ? { ...x, size } : x)
+    } : d))
   }
 
   const totalRows = visibleTables.reduce((acc, table) => acc + table.rows.length, 0)
@@ -173,8 +268,7 @@ export default function App() {
             <div className="small-muted">Dark glass BI cockpit</div>
             <h2>Загружай, объединяй, фильтруй и выводи данные в графики</h2>
             <p>
-              Теперь интерфейс на русском и с явным BI-конструктором: выбираешь таблицы,
-              строишь связи, задаешь поля для группировки, метрики и внутренние фильтры.
+              Теперь внутри есть несколько дашбордов, сохраненные виджеты, pivot-аналитика и визуальная схема модели.
             </p>
             <div className="button-row">
               <button className="primary-btn" onClick={() => setSection('Конструктор графиков')}>Открыть конструктор графиков</button>
@@ -190,8 +284,16 @@ export default function App() {
 
         {section === 'Дашборд' && (
           <div className="stack">
+            <DashboardManager
+              dashboards={dashboards}
+              currentDashboardId={activeDashboard?.id}
+              onCreate={createDashboard}
+              onSelect={setCurrentDashboardId}
+              onDelete={deleteDashboard}
+            />
+
             <div className="dashboard-grid">
-              <ChartCard title="График по текущей конфигурации" data={explore.chartData} mode={config.chartMode} />
+              <ChartCard title="График по текущей конфигурации" data={explore.chartData} secondaryData={explore.secondaryData} mode={config.chartMode} />
               <ChartCard title="Состояние датасетов" data={[
                 { label: 'Файлы', value: files.length || 1 },
                 { label: 'Таблицы', value: visibleTables.length || 1 },
@@ -199,24 +301,21 @@ export default function App() {
               ]} mode="line" />
               <ChartCard title="Качество модели" data={[
                 { label: 'Связи', value: relations.length || 1 },
-                { label: 'Виды', value: savedViews.length || 1 }
+                { label: 'Виды', value: savedViews.length || 1 },
+                { label: 'Виджеты', value: (activeDashboard?.widgets || []).length || 1 }
               ]} mode="donut" />
             </div>
 
-            <div className="dashboard-grid">
-              <div className="panel glass">
-                <div className="panel-header">
-                  <h3>Как пользоваться инструментом</h3>
-                </div>
-                <div className="steps-list">
-                  <div>1. Зайди в раздел <strong>Данные</strong> и загрузи 1 или несколько файлов.</div>
-                  <div>2. В разделе <strong>Модель</strong> выбери, по каким колонкам объединять таблицы.</div>
-                  <div>3. В разделе <strong>Конструктор графиков</strong> выбери измерения, метрики и фильтры.</div>
-                  <div>4. Сохрани готовый вид в разделе <strong>Сохраненные виды</strong>.</div>
-                </div>
-              </div>
+            <DashboardBoard
+              widgets={activeDashboard?.widgets || []}
+              onMoveUp={(id) => moveWidget(id, 'up')}
+              onMoveDown={(id) => moveWidget(id, 'down')}
+              onRemove={removeWidget}
+              onResize={resizeWidget}
+            />
 
-              <TablePreview table={selectedTable} />
+            <div className="dashboard-grid">
+              <JoinPreview relations={relations} modelRows={model.rows} modelColumns={model.columns} />
               <ProfilePanel table={selectedTable} />
             </div>
           </div>
@@ -240,13 +339,17 @@ export default function App() {
         )}
 
         {section === 'Модель' && (
-          <ModelPanel
-            tables={visibleTables}
-            relations={relations}
-            setRelations={setRelations}
-            suggestions={suggestions}
-            validationMap={validationMap}
-          />
+          <div className="stack">
+            <ModelPanel
+              tables={visibleTables}
+              relations={relations}
+              setRelations={setRelations}
+              suggestions={suggestions}
+              validationMap={validationMap}
+            />
+            <ModelCanvas tables={visibleTables} relations={relations} />
+            <JoinPreview relations={relations} modelRows={model.rows} modelColumns={model.columns} />
+          </div>
         )}
 
         {section === 'Конструктор графиков' && (
@@ -255,8 +358,10 @@ export default function App() {
             modelColumns={model.columns}
             chartData={explore.chartData}
             secondaryData={explore.secondaryData}
+            pivotData={explore.pivotData}
             config={config}
             setConfig={setConfig}
+            onAddWidget={addCurrentWidget}
           />
         )}
 
@@ -278,7 +383,7 @@ export default function App() {
               <div className="setting-row"><span>Persistence</span><strong>IndexedDB</strong></div>
               <div className="setting-row"><span>Обработка ошибок</span><strong>UI banner + try/catch</strong></div>
               <div className="setting-row"><span>Экспорт</span><strong>CSV / XLSX</strong></div>
-              <div className="setting-row"><span>Hardening</span><strong>готова база под Web Workers</strong></div>
+              <div className="setting-row"><span>Dashboards</span><strong>несколько отдельных дашбордов</strong></div>
             </div>
           </div>
         )}
