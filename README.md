@@ -102,3 +102,12 @@ Vercel:
 - постраничный preview таблиц по 50 строк
 - реальный QA report по файлу CRM_pipeline_100_RU_IT_companies (1).xlsx
 - сохранение qa-логов в workspace
+
+
+## Обновление v13.4 Final Hardening
+- App.jsx декомпозирован через hooks: usePersistentWorkspace, useDataWorkspace, useModeling, useAnalytics, useDashboards, useSecurityTheme
+- analytics вынесена в отдельный worker: src/workers/analyticsWorker.js
+- чистое ядро аналитики вынесено в src/core/exploreShared.js
+- добавлены unit tests: metrics, permissions, explore
+- package.json дополнен vitest и scripts test/test:watch
+- вручную Excel не прогонялся в этой версии, как и просили; приоритет был на архитектуру, тесты и стабильность
