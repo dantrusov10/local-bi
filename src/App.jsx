@@ -13,6 +13,9 @@ import DashboardBoard from './components/DashboardBoard.jsx'
 import DashboardManager from './components/DashboardManager.jsx'
 import JoinPreview from './components/JoinPreview.jsx'
 import ModelCanvas from './components/ModelCanvas.jsx'
+import GlobalFiltersBar from './components/GlobalFiltersBar.jsx'
+import SemanticMetricsPanel from './components/SemanticMetricsPanel.jsx'
+import DrilldownPanel from './components/DrilldownPanel.jsx'
 import { parseFile } from './core/parser.js'
 import { profileTable } from './core/profiling.js'
 import { suggestJoins, validateRelation } from './core/matching.js'
@@ -36,7 +39,10 @@ const defaultConfig = {
   sort: 'desc',
   topN: '',
   pivotRows: [],
-  pivotColumns: []
+  pivotColumns: [],
+  dateField: '',
+  compareMode: 'none',
+  timeGrain: 'month'
 }
 
 function makeDefaultDashboard() {
@@ -54,6 +60,9 @@ export default function App() {
   const [savedViews, setSavedViews] = useState([])
   const [dashboards, setDashboards] = useState([makeDefaultDashboard()])
   const [currentDashboardId, setCurrentDashboardId] = useState('')
+  const [semanticMetrics, setSemanticMetrics] = useState([])
+  const [globalFilters, setGlobalFilters] = useState([])
+  const [drilldown, setDrilldown] = useState({ label: '', rows: [] })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
@@ -71,6 +80,8 @@ export default function App() {
         setDashboards(persistedDashboards)
         setCurrentDashboardId(persisted.currentDashboardId || persistedDashboards[0]?.id || '')
         setSelectedTableId(persisted.selectedTableId || null)
+        setSemanticMetrics(persisted.semanticMetrics || [])
+        setGlobalFilters(persisted.globalFilters || [])
       } else {
         const init = makeDefaultDashboard()
         setDashboards([init])
@@ -89,9 +100,11 @@ export default function App() {
       savedViews,
       dashboards,
       currentDashboardId,
-      selectedTableId
+      selectedTableId,
+      semanticMetrics,
+      globalFilters
     })
-  }, [files, tables, sheetSelection, relations, config, savedViews, dashboards, currentDashboardId, selectedTableId])
+  }, [files, tables, sheetSelection, relations, config, savedViews, dashboards, currentDashboardId, selectedTableId, semanticMetrics, globalFilters])
 
   const visibleTables = useMemo(() => (
     tables.filter((table) => {
@@ -119,7 +132,10 @@ export default function App() {
   }, [relations, visibleTables])
 
   const model = useMemo(() => buildModelRows(visibleTables, relations), [visibleTables, relations])
-  const explore = useMemo(() => buildExploreData(model.rows, config), [model.rows, config])
+  const explore = useMemo(
+    () => buildExploreData(model.rows, config, semanticMetrics, globalFilters),
+    [model.rows, config, semanticMetrics, globalFilters]
+  )
 
   const activeDashboard = useMemo(
     () => dashboards.find((d) => d.id === currentDashboardId) || dashboards[0] || null,
@@ -185,7 +201,10 @@ export default function App() {
       sort: view.sort || 'desc',
       topN: view.topN || '',
       pivotRows: view.pivotRows || [],
-      pivotColumns: view.pivotColumns || []
+      pivotColumns: view.pivotColumns || [],
+      dateField: view.dateField || '',
+      compareMode: view.compareMode || 'none',
+      timeGrain: view.timeGrain || 'month'
     })
     setSection('Конструктор графиков')
   }
@@ -220,7 +239,6 @@ export default function App() {
       secondaryData: explore.secondaryData,
       size: 'normal'
     }
-
     setDashboards((prev) => prev.map((d) => d.id === activeDashboard.id ? { ...d, widgets: [...(d.widgets || []), widget] } : d))
     setSection('Дашборд')
   }
@@ -252,6 +270,22 @@ export default function App() {
     } : d))
   }
 
+  function handleChartClick(label) {
+    if (!config.dimensions?.length) return
+    const firstDimension = config.dateField || config.dimensions[0]
+    setGlobalFilters((prev) => ([
+      ...prev.filter((f) => !(f.field === firstDimension && f.id === 'cross_filter')),
+      { id: 'cross_filter', field: firstDimension, operator: 'eq', value: label }
+    ]))
+    const rows = explore.rows.filter((row) => {
+      const value = config.dateField
+        ? String(row[config.dateField] ?? '').slice(0, 7) === String(label)
+        : String(row[firstDimension] ?? '') === String(label)
+      return value
+    })
+    setDrilldown({ label, rows })
+  }
+
   const totalRows = visibleTables.reduce((acc, table) => acc + table.rows.length, 0)
 
   return (
@@ -266,13 +300,13 @@ export default function App() {
         <section className="hero-grid">
           <div className="hero-copy glass">
             <div className="small-muted">Dark glass BI cockpit</div>
-            <h2>Загружай, объединяй, фильтруй и выводи данные в графики</h2>
+            <h2>Semantic layer, глобальные фильтры, drill-down и сравнение периодов</h2>
             <p>
-              Теперь внутри есть несколько дашбордов, сохраненные виджеты, pivot-аналитика и визуальная схема модели.
+              Это уже must-have BI: бизнес-метрики, общие фильтры дашборда, cross-filtering по клику на график и сравнение периодов.
             </p>
             <div className="button-row">
               <button className="primary-btn" onClick={() => setSection('Конструктор графиков')}>Открыть конструктор графиков</button>
-              <button className="secondary-btn" onClick={() => setSection('Модель')}>Открыть модель данных</button>
+              <button className="secondary-btn" onClick={() => setSection('Метрики')}>Открыть semantic layer</button>
             </div>
           </div>
 
@@ -292,8 +326,14 @@ export default function App() {
               onDelete={deleteDashboard}
             />
 
+            <GlobalFiltersBar
+              fields={model.columns}
+              filters={globalFilters}
+              setFilters={setGlobalFilters}
+            />
+
             <div className="dashboard-grid">
-              <ChartCard title="График по текущей конфигурации" data={explore.chartData} secondaryData={explore.secondaryData} mode={config.chartMode} />
+              <ChartCard title="График по текущей конфигурации" data={explore.chartData} secondaryData={explore.secondaryData} mode={config.chartMode} onPointClick={handleChartClick} />
               <ChartCard title="Состояние датасетов" data={[
                 { label: 'Файлы', value: files.length || 1 },
                 { label: 'Таблицы', value: visibleTables.length || 1 },
@@ -313,6 +353,8 @@ export default function App() {
               onRemove={removeWidget}
               onResize={resizeWidget}
             />
+
+            <DrilldownPanel title={drilldown.label} rows={drilldown.rows} columns={model.columns} />
 
             <div className="dashboard-grid">
               <JoinPreview relations={relations} modelRows={model.rows} modelColumns={model.columns} />
@@ -352,17 +394,35 @@ export default function App() {
           </div>
         )}
 
-        {section === 'Конструктор графиков' && (
-          <ExplorePanel
-            modelRows={explore.rows}
-            modelColumns={model.columns}
-            chartData={explore.chartData}
-            secondaryData={explore.secondaryData}
-            pivotData={explore.pivotData}
-            config={config}
-            setConfig={setConfig}
-            onAddWidget={addCurrentWidget}
+        {section === 'Метрики' && (
+          <SemanticMetricsPanel
+            fields={model.columns}
+            semanticMetrics={semanticMetrics}
+            setSemanticMetrics={setSemanticMetrics}
           />
+        )}
+
+        {section === 'Конструктор графиков' && (
+          <div className="stack">
+            <GlobalFiltersBar
+              fields={model.columns}
+              filters={globalFilters}
+              setFilters={setGlobalFilters}
+            />
+            <ExplorePanel
+              modelRows={explore.rows}
+              modelColumns={model.columns}
+              chartData={explore.chartData}
+              secondaryData={explore.secondaryData}
+              pivotData={explore.pivotData}
+              config={config}
+              setConfig={setConfig}
+              onAddWidget={addCurrentWidget}
+              semanticMetrics={semanticMetrics}
+              onChartClick={handleChartClick}
+            />
+            <DrilldownPanel title={drilldown.label} rows={drilldown.rows} columns={model.columns} />
+          </div>
         )}
 
         {section === 'Сохраненные виды' && (
@@ -383,7 +443,8 @@ export default function App() {
               <div className="setting-row"><span>Persistence</span><strong>IndexedDB</strong></div>
               <div className="setting-row"><span>Обработка ошибок</span><strong>UI banner + try/catch</strong></div>
               <div className="setting-row"><span>Экспорт</span><strong>CSV / XLSX</strong></div>
-              <div className="setting-row"><span>Dashboards</span><strong>несколько отдельных дашбордов</strong></div>
+              <div className="setting-row"><span>Semantic Layer</span><strong>централизованные бизнес-метрики</strong></div>
+              <div className="setting-row"><span>Global Filters</span><strong>на весь дашборд</strong></div>
             </div>
           </div>
         )}
