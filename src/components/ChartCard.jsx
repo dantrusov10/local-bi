@@ -12,11 +12,15 @@ function color(i) {
   return COLORS[i % COLORS.length]
 }
 
-export default function ChartCard({ title, data = [], mode = 'bar', secondaryData = [] }) {
+export default function ChartCard({ title, data = [], mode = 'bar', secondaryData = [], onPointClick }) {
   const safe = data.slice(0, 12)
   const safeSecondary = secondaryData.slice(0, 12)
   const max = maxVal(safe, safeSecondary)
   const total = sumVal(safe)
+
+  function handleClick(label) {
+    if (typeof onPointClick === 'function') onPointClick(label)
+  }
 
   return (
     <div className="panel glass">
@@ -33,7 +37,7 @@ export default function ChartCard({ title, data = [], mode = 'bar', secondaryDat
             <thead><tr><th>Категория</th><th>Значение 1</th><th>Значение 2</th></tr></thead>
             <tbody>
               {safe.map((d, i) => (
-                <tr key={i}>
+                <tr key={i} onClick={() => handleClick(d.label)} className="interactive-row">
                   <td>{d.label}</td>
                   <td>{d.value}</td>
                   <td>{safeSecondary[i]?.value ?? '—'}</td>
@@ -50,7 +54,7 @@ export default function ChartCard({ title, data = [], mode = 'bar', secondaryDat
           <div className="small-muted">суммарное значение</div>
           <div className="kpi-mini-grid">
             {safe.slice(0, 4).map((d, i) => (
-              <div key={i} className="kpi-mini-item">
+              <div key={i} className="kpi-mini-item" onClick={() => handleClick(d.label)}>
                 <div className="small-muted">{d.label}</div>
                 <strong>{d.value}</strong>
               </div>
@@ -62,7 +66,7 @@ export default function ChartCard({ title, data = [], mode = 'bar', secondaryDat
       {(mode === 'bar' || mode === 'stacked') && !!safe.length && (
         <div className="chart-bars">
           {safe.map((d, i) => (
-            <div key={d.label + i} className="bar-col">
+            <div key={d.label + i} className="bar-col clickable" onClick={() => handleClick(d.label)}>
               <div className="bar-stack">
                 <div className="bar base" style={{ height: Math.max(12, (Number(d.value || 0) / max) * 180) + 'px', background: color(i) }} />
                 {mode === 'stacked' && safeSecondary[i] && (
@@ -79,7 +83,7 @@ export default function ChartCard({ title, data = [], mode = 'bar', secondaryDat
       {mode === 'hbar' && !!safe.length && (
         <div className="hbars-wrap">
           {safe.map((d, i) => (
-            <div key={d.label + i} className="hbar-row">
+            <div key={d.label + i} className="hbar-row clickable" onClick={() => handleClick(d.label)}>
               <div className="hbar-label" title={d.label}>{d.label}</div>
               <div className="hbar-track">
                 <div className="hbar-fill" style={{ width: `${Math.max(4, (Number(d.value || 0) / max) * 100)}%`, background: color(i) }} />
@@ -112,7 +116,7 @@ export default function ChartCard({ title, data = [], mode = 'bar', secondaryDat
               const x = 50 + i * (560 / Math.max(safe.length - 1, 1))
               const y = 220 - (Number(d.value || 0) / max) * 160
               return (
-                <g key={i}>
+                <g key={i} className="clickable" onClick={() => handleClick(d.label)}>
                   <circle cx={x} cy={y} r="5" fill="#44e1cf" />
                   <text x={x} y="252" textAnchor="middle" className="svg-x-label">{truncate(d.label)}</text>
                 </g>
@@ -125,7 +129,7 @@ export default function ChartCard({ title, data = [], mode = 'bar', secondaryDat
       {mode === 'funnel' && !!safe.length && (
         <div className="funnel-wrap">
           {safe.map((d, i) => (
-            <div key={i} className="funnel-row">
+            <div key={i} className="funnel-row clickable" onClick={() => handleClick(d.label)}>
               <div className="funnel-label">{d.label}</div>
               <div className="funnel-shape" style={{ width: `${Math.max(18, (Number(d.value || 0) / max) * 100)}%`, background: color(i) }}>{d.value}</div>
             </div>
@@ -143,7 +147,7 @@ export default function ChartCard({ title, data = [], mode = 'bar', secondaryDat
           </svg>
           <div className="pie-legend">
             {safe.map((d, i) => (
-              <div key={i} className="pie-legend-row">
+              <div key={i} className="pie-legend-row clickable" onClick={() => handleClick(d.label)}>
                 <span className="pie-legend-dot" style={{ background: color(i) }} />
                 <span className="pie-legend-label">{d.label}</span>
                 <strong>{d.value}</strong>

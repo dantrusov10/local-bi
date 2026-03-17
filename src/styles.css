@@ -1116,3 +1116,25 @@ font-size:12px;
     grid-template-columns: 1fr;
   }
 }
+
+
+.interactive-row,
+.clickable {
+  cursor: pointer;
+}
+
+.dashboard-tab button {
+  width: 100%;
+}
+
+.filter-row {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) auto;
+  gap: 10px;
+}
+
+@media (max-width: 1280px) {
+  .filter-row {
+    grid-template-columns: 1fr;
+  }
+}

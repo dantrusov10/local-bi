@@ -32,7 +32,9 @@ export default function ExplorePanel({
   chartData,
   secondaryData,
   pivotData,
-  onAddWidget
+  onAddWidget,
+  semanticMetrics = [],
+  onChartClick
 }) {
   const numericFields = modelColumns.filter((field) =>
     modelRows.some((row) => row[field] !== null && !Number.isNaN(Number(row[field])))
@@ -47,11 +49,21 @@ export default function ExplorePanel({
     { value: 'sum', label: 'SUM' },
     { value: 'avg', label: 'AVG' },
     { value: 'max', label: 'MAX' },
-    { value: 'min', label: 'MIN' }
+    { value: 'min', label: 'MIN' },
+    ...semanticMetrics.map((m) => ({ value: `semantic:${m.id}`, label: `Бизнес-метрика · ${m.name}` }))
   ]
   const sortOptions = [
     { value: 'desc', label: 'Сортировка по убыванию' },
     { value: 'asc', label: 'Сортировка по возрастанию' }
+  ]
+  const compareOptions = [
+    { value: 'none', label: 'Без сравнения периода' },
+    { value: 'previous_period', label: 'Сравнить с предыдущим периодом' },
+    { value: 'ytd', label: 'YTD (накопительно с начала года)' }
+  ]
+  const timeGrainOptions = [
+    { value: 'month', label: 'По месяцам' },
+    { value: 'year', label: 'По годам' }
   ]
 
   function addFilter() {
@@ -76,7 +88,7 @@ export default function ExplorePanel({
         <div className="panel glass">
           <div className="panel-header">
             <h3>Конструктор графиков и визуалов</h3>
-            <span className="small-muted">сделан как BI-builder под дашборды и аналитику</span>
+            <span className="small-muted">semantic layer, глобальные фильтры, drill-down, сравнение периодов</span>
           </div>
 
           <div className="builder-block">
@@ -147,7 +159,7 @@ export default function ExplorePanel({
               />
             </div>
 
-            <div className="builder-grid-2">
+            <div className="builder-grid-3">
               <div className="search-select">
                 <div className="search-select-label">Top N</div>
                 <input
@@ -157,6 +169,28 @@ export default function ExplorePanel({
                   onChange={(e) => setConfig((prev) => ({ ...prev, topN: e.target.value }))}
                 />
               </div>
+              <SearchSelect
+                label="Поле даты"
+                value={config.dateField || ''}
+                onChange={(v) => setConfig((prev) => ({ ...prev, dateField: v }))}
+                options={[{ value: '', label: 'Без периода' }, ...allFieldOptions]}
+                placeholder="Выбери поле даты"
+              />
+              <SearchSelect
+                label="Сравнение периода"
+                value={config.compareMode || 'none'}
+                onChange={(v) => setConfig((prev) => ({ ...prev, compareMode: v }))}
+                options={compareOptions}
+              />
+            </div>
+
+            <div className="builder-grid-2">
+              <SearchSelect
+                label="Детализация периода"
+                value={config.timeGrain || 'month'}
+                onChange={(v) => setConfig((prev) => ({ ...prev, timeGrain: v }))}
+                options={timeGrainOptions}
+              />
               <div className="button-row align-end">
                 <button className="primary-btn" onClick={onAddWidget}>Добавить на дашборд</button>
               </div>
@@ -223,8 +257,7 @@ export default function ExplorePanel({
 Разбивка: ${config.breakdown || 'без разбивки'}
 Метрика 1: ${config.metric || 'не выбрана'}(${config.metricField || '*'})
 Метрика 2: ${config.secondMetric || 'нет'}(${config.secondMetricField || '*'})
-Pivot строки: ${(config.pivotRows || []).join(', ') || 'не выбраны'}
-Pivot колонки: ${(config.pivotColumns || []).join(', ') || 'не выбраны'}
+Период: ${config.dateField || 'не выбран'} · ${config.compareMode || 'none'}
 
 Top N: ${config.topN || 'без ограничения'}
 `}
@@ -236,7 +269,13 @@ Top N: ${config.topN || 'без ограничения'}
           </div>
         </div>
 
-        <ChartCard title="Предпросмотр визуала" data={chartData} secondaryData={secondaryData} mode={config.chartMode} />
+        <ChartCard
+          title="Предпросмотр визуала"
+          data={chartData}
+          secondaryData={secondaryData}
+          mode={config.chartMode}
+          onPointClick={onChartClick}
+        />
       </div>
 
       <div className="panel glass">
