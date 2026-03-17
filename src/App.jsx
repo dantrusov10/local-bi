@@ -17,7 +17,6 @@ import GlobalFiltersBar from './components/GlobalFiltersBar.jsx'
 import SemanticMetricsPanel from './components/SemanticMetricsPanel.jsx'
 import DrilldownPanel from './components/DrilldownPanel.jsx'
 import { parseFile } from './core/parser.js'
-import { profileTable } from './core/profiling.js'
 import { suggestJoins, validateRelation } from './core/matching.js'
 import { buildModelRows } from './core/modeling.js'
 import { buildExploreData } from './core/explore.js'
@@ -26,10 +25,7 @@ import { applyRLS } from './core/permissions.js'
 import { applyTheme, defaultTheme } from './core/theme.js'
 import { sendWebhook, writeBack } from './core/api.js'
 import SettingsEnterprisePanel from './components/SettingsEnterprisePanel.jsx'
-
-function uid(prefix = 'id') {
-  return `${prefix}_${Math.random().toString(36).slice(2, 10)}`
-}
+import { uid } from './core/utils.js'
 
 const defaultConfig = {
   dimensions: [],
