@@ -94,3 +94,11 @@ Vercel:
 - подключен Web Worker для parsing + profiling CSV/XLSX
 - uid и normalizeJoinKey вынесены в src/core/utils.js
 - нормализация join-ключей разделена на soft и loose режимы
+
+
+## Обновление v13.3 QA release
+- логирование времени, строк, таблиц и колонок при загрузке через worker
+- панель QA и диагностики загрузки
+- постраничный preview таблиц по 50 строк
+- реальный QA report по файлу CRM_pipeline_100_RU_IT_companies (1).xlsx
+- сохранение qa-логов в workspace

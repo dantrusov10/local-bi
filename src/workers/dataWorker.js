@@ -1,6 +1,8 @@
 import * as XLSX from 'xlsx'
 import Papa from 'papaparse'
 
+function now() { return Date.now() }
+
 function normalizeValue(value) {
   if (value === undefined || value === null || value === '') return null
   if (typeof value === 'string') return value.trim()
@@ -10,9 +12,7 @@ function normalizeValue(value) {
 function normalizeRows(rows) {
   return rows.map((row) => {
     const next = {}
-    for (const key of Object.keys(row || {})) {
-      next[key] = normalizeValue(row[key])
-    }
+    for (const key of Object.keys(row || {})) next[key] = normalizeValue(row[key])
     return next
   })
 }
@@ -53,6 +53,7 @@ function profileTable(table) {
 
 self.onmessage = async (event) => {
   const { id, type, payload } = event.data
+  const startedAt = now()
   try {
     if (type === 'parse_csv') {
       const rowsRaw = await new Promise((resolve, reject) => {
@@ -75,7 +76,21 @@ self.onmessage = async (event) => {
         columns,
         rows
       })]
-      self.postMessage({ id, ok: true, result: { fileAsset: payload.fileAsset, tables } })
+      self.postMessage({
+        id,
+        ok: true,
+        result: {
+          fileAsset: payload.fileAsset,
+          tables,
+          qa: {
+            durationMs: now() - startedAt,
+            rowCount: rows.length,
+            tableCount: tables.length,
+            columnCount: columns.length,
+            sourceType: 'csv'
+          }
+        }
+      })
       return
     }
 
@@ -97,12 +112,20 @@ self.onmessage = async (event) => {
         })
       })
 
+      const totalRows = tables.reduce((acc, t) => acc + t.rows.length, 0)
       self.postMessage({
         id,
         ok: true,
         result: {
           fileAsset: { ...payload.fileAsset, sheetNames: workbook.SheetNames },
-          tables
+          tables,
+          qa: {
+            durationMs: now() - startedAt,
+            rowCount: totalRows,
+            tableCount: tables.length,
+            columnCount: Math.max(...tables.map((t) => t.columns.length), 0),
+            sourceType: 'xlsx'
+          }
         }
       })
       return
